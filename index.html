@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Business German Vocabulary - Persistent</title>
+<link rel="manifest" href="manifest.json">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#4CAF50">
+<style>
+/* تصميم احترافي وحديث للتطبيق */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  background: linear-gradient(135deg, #e0f2f1, #e3f2fd);
+  color: #222;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  background: #ffffffee;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.app-header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 12px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.app-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1b5e20;
+  text-align: center;
+}
+
+.app-subtitle {
+  font-size: 12px;
+  color: #666;
+}
+
+#controlDiv {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+input[type=text],
+select,
+input[type=file] {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #cfd8dc;
+  font-size: 13px;
+  min-width: 140px;
+  background-color: #fafafa;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+input[type=text]:focus,
+select:focus,
+input[type=file]:focus {
+  outline: none;
+  border-color: #42a5f5;
+  box-shadow: 0 0 0 2px rgba(66, 165, 245, 0.25);
+  background-color: #ffffff;
+}
+
+button {
+  padding: 7px 12px;
+  margin: 0;
+  background: #1e88e5;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.05s;
+  white-space: nowrap;
+}
+
+button:hover {
+  background: #1565c0;
+  box-shadow: 0 2px 6px rgba(21, 101, 192, 0.35);
+}
+
+button:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.stopBtn {
+  background-color: #e53935;
+}
+
+.stopBtn:hover {
+  background-color: #c62828;
+}
+
+.restartBtn {
+  background-color: #43a047;
+}
+
+.restartBtn:hover {
+  background-color: #2e7d32;
+}
+
+.deleteBtn {
+  background-color: #ff6b6b;
+}
+
+.deleteBtn:hover {
+  background-color: #ff5252;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 20px 12px 60px;
+}
+
+.card {
+  width: 100%;
+  max-width: 1100px;
+  background-color: #ffffffee;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+  padding: 16px 14px 20px;
+  backdrop-filter: blur(6px);
+}
+
+.card-header-text {
+  font-size: 14px;
+  color: #546e7a;
+  margin-bottom: 8px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+th,
+td {
+  padding: 10px 8px;
+  text-align: center;
+  border-bottom: 1px solid #eceff1;
+}
+
+th {
+  background: linear-gradient(120deg, #4caf50, #66bb6a);
+  color: #fff;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.serial-column {
+  width: 60px;
+  font-weight: bold;
+  color: #1b5e20;
+  background-color: #f1f8e9 !important;
+}
+
+tbody tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+tbody tr:hover {
+  background-color: #e3f2fd;
+}
+
+.highlight {
+  background-color: #fff3b0 !important;
+  color: #000 !important;
+}
+
+.scroll-buttons {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 50;
+}
+
+.scroll-buttons button {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 14px;
+}
+
+/* وضع داكن احترافي */
+body.dark-mode {
+  background: radial-gradient(circle at top, #263238, #000000);
+  color: #eceff1;
+}
+
+body.dark-mode .app-header {
+  background: #263238ee;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+}
+
+body.dark-mode .app-title {
+  color: #c8e6c9;
+}
+
+body.dark-mode .card {
+  background-color: #263238ee;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+}
+
+body.dark-mode input[type=text],
+body.dark-mode select,
+body.dark-mode input[type=file] {
+  background-color: #37474f;
+  border-color: #455a64;
+  color: #eceff1;
+}
+
+body.dark-mode input[type=text]:focus,
+body.dark-mode select:focus,
+body.dark-mode input[type=file]:focus {
+  background-color: #455a64;
+}
+
+body.dark-mode table {
+  color: #eceff1;
+}
+
+body.dark-mode .serial-column {
+  background-color: #37474f !important;
+  color: #c8e6c9;
+}
+
+body.dark-mode tbody tr:nth-child(even) {
+  background-color: #37474f;
+}
+
+body.dark-mode tbody tr:hover {
+  background-color: #455a64;
+}
+
+body.dark-mode th {
+  background: linear-gradient(120deg, #1b5e20, #2e7d32);
+}
+
+/* استجابة للشاشات الصغيرة */
+@media (max-width: 768px) {
+  .app-header-inner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .app-title {
+    text-align: center;
+  }
+
+  #controlDiv {
+    justify-content: center;
+  }
+
+  .card {
+    padding: 12px 10px 16px;
+  }
+
+  th,
+  td {
+    padding: 8px 4px;
+    font-size: 13px;
+  }
+  
+  .serial-column {
+    width: 50px;
+  }
+}
+
+@media (max-width: 480px) {
+  #controlDiv {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  input[type=text],
+  select,
+  input[type=file],
+  button {
+    width: 100%;
+  }
+  
+  .serial-column {
+    width: 40px;
+    font-size: 12px;
+  }
+}
+</style>
+</head>
+
+<body>
+<div class="app-shell">
+  <header class="app-header">
+    <div class="app-header-inner">
+      <div>
+        <div class="app-title">Business German Vocabulary</div>
+        <div class="app-subtitle">by "ALY MOKHTAR"</div>
+      </div>
+      <div id="controlDiv">
+        <input type="file" id="fileInput" accept=".txt">
+        <input type="text" id="engInput" placeholder="الكلمة بالألماني">
+        <input type="text" id="arInput" placeholder="المعنى بالعربي">
+        <select id="repeatSelect">
+          <option value="1">1 مرة</option>
+          <option value="2">2 مرات</option>
+          <option value="3">3 مرات</option>
+          <option value="4">4 مرات</option>
+          <option value="5">5 مرات</option>
+          <option value="10">10 مرات</option>
+          <option value="15">15 مرات</option>
+          <option value="20">20 مرات</option>
+        </select>
+        <button onclick="addWord()">إضافة</button>
+        <button onclick="speakAll()">🔊 نطق جميع الكلمات</button>
+        <button onclick="downloadVocab()">💾 تحميل الملف</button>
+        <button onclick="clearStorage()">مسح الكلمات</button>
+        <button onclick="toggleDarkMode()">🌓 الوضع</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <section class="card">
+      <div class="card-header-text">أضف الكلمات الألمانية ومعانيها بالعربية واستمع إلى نطقها بعدة مرات.</div>
+      <table id="vocabTable">
+        <tr>
+          <th class="serial-column">#</th>
+          <th>الكلمة بالألماني</th>
+          <th>المعنى بالعربي</th>
+          <th>التحكم بالصوت</th>
+          <th>حذف الكلمة</th>
+        </tr>
+      </table>
+    </section>
+  </main>
+
+  <div class="scroll-buttons">
+    <button onclick="scrollToTop()">⬆</button>
+    <button onclick="scrollToBottom()">⬇</button>
+  </div>
+</div>
+
+<script>
+const table = document.getElementById("vocabTable");
+let stopFlag = false;
+let currentIndex = -1;
+let selectedVoice = null;
+let darkMode = localStorage.getItem("darkMode") === "true";
+
+function loadVoices() {
+const voices = speechSynthesis.getVoices();
+selectedVoice =
+voices.find(v => v.lang === 'de-DE' && v.name.includes('Natural')) ||
+voices.find(v => v.lang === 'de-DE') ||
+voices[0];
+}
+speechSynthesis.onvoiceschanged = loadVoices;
+
+window.onload = function() {
+loadVoices();
+if (darkMode) document.body.classList.add("dark-mode");
+
+const savedData = JSON.parse(localStorage.getItem("vocabData")) || [];
+if(savedData.length) {
+  populateTable(savedData);
+}
+
+const lastIndex = parseInt(localStorage.getItem("lastIndex"));
+if(!isNaN(lastIndex) && table.rows[lastIndex + 1]) {
+setTimeout(() => {
+const row = table.rows[lastIndex + 1];
+row.classList.add("highlight");
+row.scrollIntoView({ behavior: "smooth", block: "center" });
+}, 500);
+}
+}
+
+async function translateWord(word) {
+try {
+const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=de|ar`);
+const data = await res.json();
+return data.responseData.translatedText;
+} catch {
+return "";
+}
+}
+
+async function addWord() {
+const de = document.getElementById("engInput").value.trim();
+let ar = document.getElementById("arInput").value.trim();
+if(!de) return alert("اكتب الكلمة بالألماني");
+if(!ar) ar = await translateWord(de);
+
+const row = table.insertRow();
+// إضافة العمود التسلسلي
+const serialCell = row.insertCell(0);
+serialCell.className = "serial-column";
+serialCell.innerText = table.rows.length - 1; // الترقيم يبدأ من 1
+
+const deCell = row.insertCell(1);
+deCell.innerText = de;
+
+const arCell = row.insertCell(2);
+arCell.innerText = ar;
+
+// إضافة أزرار التحكم بالصوت
+const controlCell = row.insertCell(3);
+controlCell.innerHTML = `
+<button class="stopBtn" onclick="stopSpeaking()">⏸</button>
+<button class="restartBtn" onclick="restartSpeaking(${table.rows.length-2})">▶</button>
+`;
+
+// إضافة زر حذف الكلمة
+const deleteCell = row.insertCell(4);
+deleteCell.innerHTML = `<button class="deleteBtn" onclick="deleteWord(${table.rows.length-2})">❌ حذف</button>`;
+
+let saved = JSON.parse(localStorage.getItem("vocabData")) || [];
+saved.push({ eng: de, ar });
+localStorage.setItem("vocabData", JSON.stringify(saved));
+
+document.getElementById("engInput").value = '';
+document.getElementById("arInput").value = '';
+row.scrollIntoView({ behavior: "smooth", block: "center" });
+speakWord(de, 1);
+}
+
+// دالة لحذف كلمة محددة
+function deleteWord(index) {
+if (!confirm("هل أنت متأكد من حذف هذه الكلمة؟")) return;
+
+let saved = JSON.parse(localStorage.getItem("vocabData")) || [];
+if (index >= 0 && index < saved.length) {
+// حذف الكلمة من المصفوفة
+saved.splice(index, 1);
+// تحديث التخزين المحلي
+localStorage.setItem("vocabData", JSON.stringify(saved));
+// إعادة بناء الجدول
+populateTable(saved);
+// إعادة تعيين الفهرس الحالي
+if (currentIndex >= index) {
+currentIndex--;
+localStorage.setItem("lastIndex", currentIndex);
+}
+// إيقاف النطق إذا كان يتم نطق الكلمة المحذوفة
+stopSpeaking();
+}
+}
+
+function populateTable(data) {
+// مسح جميع الصفوف باستثناء رأس الجدول
+while(table.rows.length > 1) {
+  table.deleteRow(1);
+}
+
+// إضافة الصفوف الجديدة مع الترقيم
+data.forEach((item, i) => {
+const row = table.insertRow();
+
+// إضافة العمود التسلسلي
+const serialCell = row.insertCell(0);
+serialCell.className = "serial-column";
+serialCell.innerText = i + 1; // الترقيم يبدأ من 1
+
+const deCell = row.insertCell(1);
+deCell.innerText = item.eng;
+
+const arCell = row.insertCell(2);
+arCell.innerText = item.ar;
+
+// إضافة أزرار التحكم بالصوت
+const controlCell = row.insertCell(3);
+controlCell.innerHTML = `
+<button class="stopBtn" onclick="stopSpeaking()">⏸</button>
+<button class="restartBtn" onclick="restartSpeaking(${i})">▶</button>
+`;
+
+// إضافة زر حذف الكلمة
+const deleteCell = row.insertCell(4);
+deleteCell.innerHTML = `<button class="deleteBtn" onclick="deleteWord(${i})">❌ حذف</button>`;
+});
+}
+
+function speakSequence(index) {
+const data = JSON.parse(localStorage.getItem("vocabData")) || [];
+if(index >= data.length || stopFlag) return;
+
+if(currentIndex >= 0 && table.rows[currentIndex +1]) {
+  table.rows[currentIndex +1].classList.remove('highlight');
+}
+
+currentIndex = index;
+localStorage.setItem("lastIndex", currentIndex);
+
+if(table.rows[currentIndex +1]) {
+  const row = table.rows[currentIndex +1];
+  row.classList.add('highlight');
+  row.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+const word = data[index].eng;
+const repeat = parseInt(document.getElementById("repeatSelect").value);
+stopFlag = false;
+
+speakWord(word, repeat, () => {
+if(!stopFlag) speakSequence(index +1);
+});
+}
+
+function speakWord(word, repeat, onComplete) {
+let count = 0;
+function speakAgain() {
+if(stopFlag) return;
+const utter = new SpeechSynthesisUtterance(word);
+utter.lang = 'de-DE';
+utter.voice = selectedVoice;
+utter.onend = () => {
+count++;
+if(count < repeat) speakAgain();
+else if(onComplete) onComplete();
+};
+speechSynthesis.speak(utter);
+}
+speakAgain();
+}
+
+function stopSpeaking() {
+stopFlag = true;
+speechSynthesis.cancel();
+}
+
+function restartSpeaking(index) {
+stopFlag = false;
+speechSynthesis.cancel();
+setTimeout(() => speakSequence(index), 100);
+}
+
+function speakAll() {
+stopFlag = false;
+speechSynthesis.cancel();
+speakSequence(0);
+}
+
+function clearStorage() {
+if (!confirm("هل أنت متأكد من مسح جميع الكلمات؟")) return;
+localStorage.removeItem("vocabData");
+localStorage.removeItem("lastIndex");
+while(table.rows.length > 1) table.deleteRow(1);
+alert("تم مسح جميع الكلمات.");
+}
+
+function toggleDarkMode() {
+document.body.classList.toggle("dark-mode");
+localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
+}
+
+function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function scrollToBottom() { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }
+
+function downloadVocab() {
+const data = JSON.parse(localStorage.getItem("vocabData")) || [];
+if(!data.length) return alert("لا توجد كلمات.");
+const content = data.map(i => i.eng + "\n" + i.ar).join("\n");
+const a = document.createElement("a");
+a.href = URL.createObjectURL(new Blob([content]));
+a.download = "vocab.txt";
+a.click();
+}
+
+document.getElementById("engInput").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        addWord();
+    }
+});
+
+document.getElementById("arInput").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        addWord();
+    }
+});
+
+// تحميل الكلمات من ملف txt
+document.getElementById("fileInput").addEventListener("change", function (e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (event) {
+        const lines = event.target.result
+            .split(/\r?\n/)
+            .map(l => l.trim())
+            .filter(l => l !== "");
+
+        const vocabData = [];
+
+        for (let i = 0; i < lines.length; i += 2) {
+            vocabData.push({
+                eng: lines[i],
+                ar: lines[i + 1] || ""
+            });
+        }
+
+        localStorage.setItem("vocabData", JSON.stringify(vocabData));
+        populateTable(vocabData);
+    };
+
+    reader.readAsText(file);
+});
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
+</script>
+
+</body>
+</html>

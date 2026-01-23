@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Business German Vocabulary - Persistent</title>
+
+<style>
+/* CSS الأصلي بدون أي تعديل */
+body {
+font-family: Arial, sans-serif;
+background-color: #f4f4f9;
+margin: 0;
+font-weight: bold;
+transition: background-color 0.3s, color 0.3s;
+padding-top: 140px;
+}
+h2 {
+text-align: center;
+color: #333;
+position: fixed;
+top: -25px;
+width: 100%;
+background-color: #f4f4f9;
+padding: 18px 0;
+z-index: 10;
+box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+#controlDiv {
+text-align: center;
+position: fixed;
+top: 50px;
+width: 100%;
+background-color: #f4f4f9;
+padding: 10px 0;
+z-index: 10;
+box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+input[type=text], select {
+padding: 6px;
+margin: 2px;
+border-radius: 5px;
+border: 1px solid #ccc;
+}
+table {
+width: 90%;
+margin: auto;
+border-collapse: collapse;
+box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+th, td {
+padding: 12px;
+text-align: center;
+border-bottom: 1px solid #ddd;
+}
+th {
+background-color: #4CAF50;
+color: white;
+}
+tr:nth-child(even){background-color: #f9f9f9;}
+button {
+padding: 6px 12px;
+margin: 2px;
+background-color: #2196F3;
+color: white;
+border: none;
+border-radius: 5px;
+cursor: pointer;
+}
+button:hover { background-color: #0b7dda; }
+.stopBtn { background-color: #f44336; }
+.restartBtn { background-color: #4CAF50; }
+.highlight { background-color: #fff3b0 !important; color: #000 !important; }
+
+body.dark-mode { background-color: #121212; color: #f5f5f5; }
+body.dark-mode th { background-color: #2b2b2b; }
+body.dark-mode tr:nth-child(even){ background-color: #1f1f1f; }
+
+.scroll-buttons {
+position: fixed;
+bottom: 20px;
+right: 20px;
+display: flex;
+flex-direction: column;
+}
+.scroll-buttons button {
+margin-bottom: 5px;
+width: 30px;
+font-size: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Business German Vocabulary by "ALY MOKHTAR"</h2>
+
+<div id="controlDiv">
+<input type="file" id="fileInput" accept=".txt">
+<input type="text" id="engInput" placeholder="الكلمة بالألماني">
+<input type="text" id="arInput" placeholder="المعنى بالعربي">
+
+<select id="repeatSelect">
+<option value="1">1 مرة</option>
+<option value="2">2 مرات</option>
+<option value="3">3 مرات</option>
+<option value="4">4 مرات</option>
+<option value="5">5 مرات</option>
+<option value="10">10 مرات</option>
+<option value="15">15 مرات</option>
+<option value="20">20 مرات</option>
+
+</select>
+
+<button onclick="addWord()">إضافة</button>
+<button onclick="speakAll()">🔊 نطق جميع الكلمات</button>
+<button onclick="downloadVocab()">💾 تحميل الملف</button>
+<button onclick="clearStorage()">مسح الكلمات</button>
+<button onclick="toggleDarkMode()">🌓</button>
+</div>
+
+<table id="vocabTable">
+<tr>
+<th>الكلمة بالألماني</th>
+<th>المعنى بالعربي</th>
+<th>التحكم بالصوت</th>
+</tr>
+</table>
+
+<div class="scroll-buttons">
+<button onclick="scrollToTop()">⬆</button>
+<button onclick="scrollToBottom()">⬇</button>
+</div>
+
+<script>
+const table = document.getElementById("vocabTable");
+let stopFlag = false;
+let currentIndex = -1;
+let selectedVoice = null;
+let darkMode = localStorage.getItem("darkMode") === "true";
+
+function loadVoices() {
+const voices = speechSynthesis.getVoices();
+selectedVoice =
+voices.find(v => v.lang === 'de-DE' && v.name.includes('Natural')) ||
+voices.find(v => v.lang === 'de-DE') ||
+voices[0];
+}
+speechSynthesis.onvoiceschanged = loadVoices;
+
+window.onload = function() {
+loadVoices();
+if (darkMode) document.body.classList.add("dark-mode");
+
+const savedData = JSON.parse(localStorage.getItem("vocabData")) || [];
+if(savedData.length) populateTable(savedData);
+
+const lastIndex = parseInt(localStorage.getItem("lastIndex"));
+if(!isNaN(lastIndex) && table.rows[lastIndex + 1]) {
+setTimeout(() => {
+const row = table.rows[lastIndex + 1];
+row.classList.add("highlight");
+row.scrollIntoView({ behavior: "smooth", block: "center" });
+}, 500);
+}
+}
+
+async function translateWord(word) {
+try {
+const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=de|ar`);
+const data = await res.json();
+return data.responseData.translatedText;
+} catch {
+return "";
+}
+}
+
+async function addWord() {
+const de = engInput.value.trim();
+let ar = arInput.value.trim();
+if(!de) return alert("اكتب الكلمة بالألماني");
+if(!ar) ar = await translateWord(de);
+
+const row = table.insertRow();
+row.insertCell(0).innerText = de;
+row.insertCell(1).innerText = ar;
+row.insertCell(2).innerHTML = `
+<button class="stopBtn" onclick="stopSpeaking()">⏸</button>
+<button class="restartBtn" onclick="restartSpeaking(${table.rows.length-2})">▶</button>
+`;
+
+let saved = JSON.parse(localStorage.getItem("vocabData")) || [];
+saved.push({ eng: de, ar });
+localStorage.setItem("vocabData", JSON.stringify(saved));
+
+engInput.value = '';
+arInput.value = '';
+row.scrollIntoView({ behavior: "smooth", block: "center" });
+speakWord(de, 1);
+}
+
+function populateTable(data) {
+while(table.rows.length > 1) table.deleteRow(1);
+data.forEach((item, i) => {
+const row = table.insertRow();
+row.insertCell(0).innerText = item.eng;
+row.insertCell(1).innerText = item.ar;
+row.insertCell(2).innerHTML = `
+<button class="stopBtn" onclick="stopSpeaking()">⏸</button>
+<button class="restartBtn" onclick="restartSpeaking(${i})">▶</button>
+`;
+});
+}
+
+function speakSequence(index) {
+const data = JSON.parse(localStorage.getItem("vocabData")) || [];
+if(index >= data.length || stopFlag) return;
+
+if(currentIndex >= 0)
+table.rows[currentIndex +1].classList.remove('highlight');
+
+currentIndex = index;
+localStorage.setItem("lastIndex", currentIndex);
+
+const row = table.rows[currentIndex +1];
+row.classList.add('highlight');
+row.scrollIntoView({ behavior: "smooth", block: "center" });
+
+const word = data[index].eng;
+const repeat = parseInt(repeatSelect.value);
+stopFlag = false;
+
+speakWord(word, repeat, () => {
+if(!stopFlag) speakSequence(index +1);
+});
+}
+
+function speakWord(word, repeat, onComplete) {
+let count = 0;
+function speakAgain() {
+if(stopFlag) return;
+const utter = new SpeechSynthesisUtterance(word);
+utter.lang = 'de-DE';
+utter.voice = selectedVoice;
+utter.onend = () => {
+count++;
+if(count < repeat) speakAgain();
+else if(onComplete) onComplete();
+};
+speechSynthesis.speak(utter);
+}
+speakAgain();
+}
+
+function stopSpeaking() {
+stopFlag = true;
+speechSynthesis.cancel();
+}
+
+function restartSpeaking(index) {
+stopFlag = false;
+speechSynthesis.cancel();
+setTimeout(() => speakSequence(index), 100);
+}
+
+function speakAll() {
+stopFlag = false;
+speechSynthesis.cancel();
+speakSequence(0);
+}
+
+function clearStorage() {
+localStorage.removeItem("vocabData");
+localStorage.removeItem("lastIndex");
+while(table.rows.length > 1) table.deleteRow(1);
+alert("تم مسح الكلمات.");
+}
+
+function toggleDarkMode() {
+document.body.classList.toggle("dark-mode");
+localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
+}
+
+function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function scrollToBottom() { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }
+
+function downloadVocab() {
+const data = JSON.parse(localStorage.getItem("vocabData")) || [];
+if(!data.length) return alert("لا توجد كلمات.");
+const content = data.map(i => i.eng + "\n" + i.ar).join("\n");
+const a = document.createElement("a");
+a.href = URL.createObjectURL(new Blob([content]));
+a.download = "vocab.txt";
+a.click();
+}
+document.getElementById("engInput").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        addWord();
+    }
+});
+
+document.getElementById("arInput").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        addWord();
+    }
+});
+</script>
+
+</body>
+</html>

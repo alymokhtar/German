@@ -61,7 +61,7 @@ body {
 #controlDiv {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
   justify-content: center;
 }
@@ -136,6 +136,53 @@ button:active {
 
 .deleteBtn:hover {
   background-color: #ff5252;
+}
+
+/* عنصر التحكم في سرعة النطق - تصميم دقيق */
+.speed-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(30, 136, 229, 0.1);
+  padding: 4px 12px;
+  border-radius: 40px;
+  backdrop-filter: blur(2px);
+  border: 1px solid rgba(30, 136, 229, 0.3);
+}
+
+.speed-control button {
+  background: #1e88e5;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-weight: bold;
+  font-size: 18px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.speed-control button:hover {
+  background: #0b5e9e;
+  transform: scale(1.02);
+}
+
+.speed-value {
+  font-weight: 700;
+  font-size: 15px;
+  min-width: 55px;
+  text-align: center;
+  color: #0d3c5e;
+  letter-spacing: 0.5px;
+  font-family: monospace;
+}
+
+body.dark-mode .speed-control {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+body.dark-mode .speed-value {
+  color: #ffecb3;
 }
 
 .app-main {
@@ -316,8 +363,14 @@ body.dark-mode th {
   input[type=text],
   select,
   input[type=file],
-  button {
+  button,
+  .speed-control {
     width: 100%;
+    justify-content: center;
+  }
+
+  .speed-control {
+    justify-content: space-between;
   }
   
   .serial-column {
@@ -354,6 +407,14 @@ body.dark-mode th {
         <button onclick="speakAll()">🔊 نطق جميع الكلمات</button>
         <button onclick="downloadVocab()">💾 تحميل الملف</button>
         <button onclick="clearStorage()">مسح الكلمات</button>
+
+        <!-- أداة التحكم في سرعة النطق بخطوات دقيقة (0.05) -->
+        <div class="speed-control">
+          <button onclick="changeSpeechRate(-0.05)" title="أبطأ (خطوة 0.05)">−</button>
+          <span class="speed-value" id="speechRateDisplay">1.00x</span>
+          <button onclick="changeSpeechRate(0.05)" title="أسرع (خطوة 0.05)">+</button>
+        </div>
+
         <button onclick="toggleDarkMode()">🌓 الوضع</button>
       </div>
     </div>
@@ -361,15 +422,18 @@ body.dark-mode th {
 
   <main class="app-main">
     <section class="card">
-      <div class="card-header-text">أضف الكلمات الألمانية ومعانيها بالعربية واستمع إلى نطقها بعدة مرات.</div>
+      <div class="card-header-text">أضف الكلمات الألمانية ومعانيها بالعربية واستمع إلى نطقها بعدة مرات. <span style="font-size:12px;">⚡ التحكم بسرعة النطق (±0.05)</span></div>
       <table id="vocabTable">
-        <tr>
-          <th class="serial-column">#</th>
-          <th>الكلمة بالألماني</th>
-          <th>المعنى بالعربي</th>
-          <th>التحكم بالصوت</th>
-          <th>حذف الكلمة</th>
-        </tr>
+        <thead>
+          <tr>
+            <th class="serial-column">#</th>
+            <th>الكلمة بالألماني</th>
+            <th>المعنى بالعربي</th>
+            <th>التحكم بالصوت</th>
+            <th>حذف الكلمة</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
       </table>
     </section>
   </main>
@@ -387,223 +451,257 @@ let currentIndex = -1;
 let selectedVoice = null;
 let darkMode = localStorage.getItem("darkMode") === "true";
 
+// ---------- إدارة سرعة النطق بخطوات دقيقة (0.05) ----------
+let currentSpeechRate = 1.0;      // السرعة الافتراضية 1.00
+const MIN_RATE = 0.5;
+const MAX_RATE = 3.0;
+const RATE_STEP = 0.05;           // خطوة دقيقة
+
+// تحديث عرض السرعة وحفظها في localStorage
+function updateRateDisplay() {
+  const displaySpan = document.getElementById("speechRateDisplay");
+  if (displaySpan) displaySpan.innerText = currentSpeechRate.toFixed(2) + "x";
+  localStorage.setItem("speechRate", currentSpeechRate);
+}
+
+// تغيير السرعة (زيادة أو نقصان) بخطوة 0.05
+function changeSpeechRate(delta) {
+  let newRate = currentSpeechRate + delta;
+  if (newRate < MIN_RATE) newRate = MIN_RATE;
+  if (newRate > MAX_RATE) newRate = MAX_RATE;
+  // تقريب لأقرب 0.01 للتخلص من أخطاء الفاصلة العائمة
+  newRate = Math.round(newRate * 100) / 100;
+  if (newRate !== currentSpeechRate) {
+    currentSpeechRate = newRate;
+    updateRateDisplay();
+  }
+}
+
+// تحميل السرعة المحفوظة
+function loadSpeechRate() {
+  const savedRate = localStorage.getItem("speechRate");
+  if (savedRate !== null) {
+    let rate = parseFloat(savedRate);
+    if (!isNaN(rate) && rate >= MIN_RATE && rate <= MAX_RATE) {
+      currentSpeechRate = rate;
+    }
+  }
+  updateRateDisplay();
+}
+
 function loadVoices() {
-const voices = speechSynthesis.getVoices();
-selectedVoice =
-voices.find(v => v.lang === 'de-DE' && v.name.includes('Natural')) ||
-voices.find(v => v.lang === 'de-DE') ||
-voices[0];
+  const voices = speechSynthesis.getVoices();
+  selectedVoice =
+    voices.find(v => v.lang === 'de-DE' && v.name.includes('Natural')) ||
+    voices.find(v => v.lang === 'de-DE') ||
+    voices[0];
 }
 speechSynthesis.onvoiceschanged = loadVoices;
 
 window.onload = function() {
-loadVoices();
-if (darkMode) document.body.classList.add("dark-mode");
+  loadVoices();
+  loadSpeechRate();         // استعادة سرعة النطق الدقيقة
+  if (darkMode) document.body.classList.add("dark-mode");
 
-const savedData = JSON.parse(localStorage.getItem("vocabData")) || [];
-if(savedData.length) {
-  populateTable(savedData);
-}
+  const savedData = JSON.parse(localStorage.getItem("vocabData")) || [];
+  if(savedData.length) {
+    populateTable(savedData);
+  }
 
-const lastIndex = parseInt(localStorage.getItem("lastIndex"));
-if(!isNaN(lastIndex) && table.rows[lastIndex + 1]) {
-setTimeout(() => {
-const row = table.rows[lastIndex + 1];
-row.classList.add("highlight");
-row.scrollIntoView({ behavior: "smooth", block: "center" });
-}, 500);
-}
+  const lastIndex = parseInt(localStorage.getItem("lastIndex"));
+  if(!isNaN(lastIndex) && table.rows[lastIndex + 1]) {
+    setTimeout(() => {
+      const row = table.rows[lastIndex + 1];
+      row.classList.add("highlight");
+      row.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 500);
+  }
 }
 
 async function translateWord(word) {
-try {
-const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=de|ar`);
-const data = await res.json();
-return data.responseData.translatedText;
-} catch {
-return "";
-}
+  try {
+    const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=de|ar`);
+    const data = await res.json();
+    return data.responseData.translatedText;
+  } catch {
+    return "";
+  }
 }
 
 async function addWord() {
-const de = document.getElementById("engInput").value.trim();
-let ar = document.getElementById("arInput").value.trim();
-if(!de) return alert("اكتب الكلمة بالألماني");
-if(!ar) ar = await translateWord(de);
+  const de = document.getElementById("engInput").value.trim();
+  let ar = document.getElementById("arInput").value.trim();
+  if(!de) return alert("اكتب الكلمة بالألماني");
+  if(!ar) ar = await translateWord(de);
 
-const row = table.insertRow();
-// إضافة العمود التسلسلي
-const serialCell = row.insertCell(0);
-serialCell.className = "serial-column";
-serialCell.innerText = table.rows.length - 1; // الترقيم يبدأ من 1
+  const row = table.insertRow();
+  // إضافة العمود التسلسلي
+  const serialCell = row.insertCell(0);
+  serialCell.className = "serial-column";
+  serialCell.innerText = table.rows.length - 1;
 
-const deCell = row.insertCell(1);
-deCell.innerText = de;
+  const deCell = row.insertCell(1);
+  deCell.innerText = de;
 
-const arCell = row.insertCell(2);
-arCell.innerText = ar;
+  const arCell = row.insertCell(2);
+  arCell.innerText = ar;
 
-// إضافة أزرار التحكم بالصوت
-const controlCell = row.insertCell(3);
-controlCell.innerHTML = `
-<button class="stopBtn" onclick="stopSpeaking()">⏸</button>
-<button class="restartBtn" onclick="restartSpeaking(${table.rows.length-2})">▶</button>
-`;
+  // إضافة أزرار التحكم بالصوت
+  const controlCell = row.insertCell(3);
+  controlCell.innerHTML = `
+    <button class="stopBtn" onclick="stopSpeaking()">⏸</button>
+    <button class="restartBtn" onclick="restartSpeaking(${table.rows.length-2})">▶</button>
+  `;
 
-// إضافة زر حذف الكلمة
-const deleteCell = row.insertCell(4);
-deleteCell.innerHTML = `<button class="deleteBtn" onclick="deleteWord(${table.rows.length-2})">❌ حذف</button>`;
+  // إضافة زر حذف الكلمة
+  const deleteCell = row.insertCell(4);
+  deleteCell.innerHTML = `<button class="deleteBtn" onclick="deleteWord(${table.rows.length-2})">❌ حذف</button>`;
 
-let saved = JSON.parse(localStorage.getItem("vocabData")) || [];
-saved.push({ eng: de, ar });
-localStorage.setItem("vocabData", JSON.stringify(saved));
+  let saved = JSON.parse(localStorage.getItem("vocabData")) || [];
+  saved.push({ eng: de, ar });
+  localStorage.setItem("vocabData", JSON.stringify(saved));
 
-document.getElementById("engInput").value = '';
-document.getElementById("arInput").value = '';
-row.scrollIntoView({ behavior: "smooth", block: "center" });
-speakWord(de, 1);
+  document.getElementById("engInput").value = '';
+  document.getElementById("arInput").value = '';
+  row.scrollIntoView({ behavior: "smooth", block: "center" });
+  speakWord(de, 1);
 }
 
 // دالة لحذف كلمة محددة
 function deleteWord(index) {
-if (!confirm("هل أنت متأكد من حذف هذه الكلمة؟")) return;
+  if (!confirm("هل أنت متأكد من حذف هذه الكلمة؟")) return;
 
-let saved = JSON.parse(localStorage.getItem("vocabData")) || [];
-if (index >= 0 && index < saved.length) {
-// حذف الكلمة من المصفوفة
-saved.splice(index, 1);
-// تحديث التخزين المحلي
-localStorage.setItem("vocabData", JSON.stringify(saved));
-// إعادة بناء الجدول
-populateTable(saved);
-// إعادة تعيين الفهرس الحالي
-if (currentIndex >= index) {
-currentIndex--;
-localStorage.setItem("lastIndex", currentIndex);
-}
-// إيقاف النطق إذا كان يتم نطق الكلمة المحذوفة
-stopSpeaking();
-}
+  let saved = JSON.parse(localStorage.getItem("vocabData")) || [];
+  if (index >= 0 && index < saved.length) {
+    saved.splice(index, 1);
+    localStorage.setItem("vocabData", JSON.stringify(saved));
+    populateTable(saved);
+    if (currentIndex >= index) {
+      currentIndex--;
+      localStorage.setItem("lastIndex", currentIndex);
+    }
+    stopSpeaking();
+  }
 }
 
 function populateTable(data) {
-// مسح جميع الصفوف باستثناء رأس الجدول
-while(table.rows.length > 1) {
-  table.deleteRow(1);
-}
+  // مسح جميع الصفوف باستثناء رأس الجدول
+  while(table.rows.length > 1) {
+    table.deleteRow(1);
+  }
 
-// إضافة الصفوف الجديدة مع الترقيم
-data.forEach((item, i) => {
-const row = table.insertRow();
+  // إضافة الصفوف الجديدة مع الترقيم
+  data.forEach((item, i) => {
+    const row = table.insertRow();
 
-// إضافة العمود التسلسلي
-const serialCell = row.insertCell(0);
-serialCell.className = "serial-column";
-serialCell.innerText = i + 1; // الترقيم يبدأ من 1
+    const serialCell = row.insertCell(0);
+    serialCell.className = "serial-column";
+    serialCell.innerText = i + 1;
 
-const deCell = row.insertCell(1);
-deCell.innerText = item.eng;
+    const deCell = row.insertCell(1);
+    deCell.innerText = item.eng;
 
-const arCell = row.insertCell(2);
-arCell.innerText = item.ar;
+    const arCell = row.insertCell(2);
+    arCell.innerText = item.ar;
 
-// إضافة أزرار التحكم بالصوت
-const controlCell = row.insertCell(3);
-controlCell.innerHTML = `
-<button class="stopBtn" onclick="stopSpeaking()">⏸</button>
-<button class="restartBtn" onclick="restartSpeaking(${i})">▶</button>
-`;
+    const controlCell = row.insertCell(3);
+    controlCell.innerHTML = `
+      <button class="stopBtn" onclick="stopSpeaking()">⏸</button>
+      <button class="restartBtn" onclick="restartSpeaking(${i})">▶</button>
+    `;
 
-// إضافة زر حذف الكلمة
-const deleteCell = row.insertCell(4);
-deleteCell.innerHTML = `<button class="deleteBtn" onclick="deleteWord(${i})">❌ حذف</button>`;
-});
+    const deleteCell = row.insertCell(4);
+    deleteCell.innerHTML = `<button class="deleteBtn" onclick="deleteWord(${i})">❌ حذف</button>`;
+  });
 }
 
 function speakSequence(index) {
-const data = JSON.parse(localStorage.getItem("vocabData")) || [];
-if(index >= data.length || stopFlag) return;
+  const data = JSON.parse(localStorage.getItem("vocabData")) || [];
+  if(index >= data.length || stopFlag) return;
 
-if(currentIndex >= 0 && table.rows[currentIndex +1]) {
-  table.rows[currentIndex +1].classList.remove('highlight');
+  if(currentIndex >= 0 && table.rows[currentIndex +1]) {
+    table.rows[currentIndex +1].classList.remove('highlight');
+  }
+
+  currentIndex = index;
+  localStorage.setItem("lastIndex", currentIndex);
+
+  if(table.rows[currentIndex +1]) {
+    const row = table.rows[currentIndex +1];
+    row.classList.add('highlight');
+    row.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  const word = data[index].eng;
+  const repeat = parseInt(document.getElementById("repeatSelect").value);
+  stopFlag = false;
+
+  speakWord(word, repeat, () => {
+    if(!stopFlag) speakSequence(index + 1);
+  });
 }
 
-currentIndex = index;
-localStorage.setItem("lastIndex", currentIndex);
-
-if(table.rows[currentIndex +1]) {
-  const row = table.rows[currentIndex +1];
-  row.classList.add('highlight');
-  row.scrollIntoView({ behavior: "smooth", block: "center" });
-}
-
-const word = data[index].eng;
-const repeat = parseInt(document.getElementById("repeatSelect").value);
-stopFlag = false;
-
-speakWord(word, repeat, () => {
-if(!stopFlag) speakSequence(index +1);
-});
-}
-
+// الوظيفة الأساسية لنطق كلمة مع تكرار محدد وتطبيق السرعة الحالية (الدقيقة)
 function speakWord(word, repeat, onComplete) {
-let count = 0;
-function speakAgain() {
-if(stopFlag) return;
-const utter = new SpeechSynthesisUtterance(word);
-utter.lang = 'de-DE';
-utter.voice = selectedVoice;
-utter.onend = () => {
-count++;
-if(count < repeat) speakAgain();
-else if(onComplete) onComplete();
-};
-speechSynthesis.speak(utter);
-}
-speakAgain();
+  let count = 0;
+  function speakAgain() {
+    if(stopFlag) return;
+    const utter = new SpeechSynthesisUtterance(word);
+    utter.lang = 'de-DE';
+    utter.voice = selectedVoice;
+    // تطبيق سرعة النطق الحالية
+    utter.rate = currentSpeechRate;
+    utter.onend = () => {
+      count++;
+      if(count < repeat) speakAgain();
+      else if(onComplete) onComplete();
+    };
+    speechSynthesis.speak(utter);
+  }
+  speakAgain();
 }
 
 function stopSpeaking() {
-stopFlag = true;
-speechSynthesis.cancel();
+  stopFlag = true;
+  speechSynthesis.cancel();
 }
 
 function restartSpeaking(index) {
-stopFlag = false;
-speechSynthesis.cancel();
-setTimeout(() => speakSequence(index), 100);
+  stopFlag = false;
+  speechSynthesis.cancel();
+  setTimeout(() => speakSequence(index), 100);
 }
 
 function speakAll() {
-stopFlag = false;
-speechSynthesis.cancel();
-speakSequence(0);
+  stopFlag = false;
+  speechSynthesis.cancel();
+  speakSequence(0);
 }
 
 function clearStorage() {
-if (!confirm("هل أنت متأكد من مسح جميع الكلمات؟")) return;
-localStorage.removeItem("vocabData");
-localStorage.removeItem("lastIndex");
-while(table.rows.length > 1) table.deleteRow(1);
-alert("تم مسح جميع الكلمات.");
+  if (!confirm("هل أنت متأكد من مسح جميع الكلمات؟")) return;
+  localStorage.removeItem("vocabData");
+  localStorage.removeItem("lastIndex");
+  while(table.rows.length > 1) table.deleteRow(1);
+  alert("تم مسح جميع الكلمات.");
 }
 
 function toggleDarkMode() {
-document.body.classList.toggle("dark-mode");
-localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
+  document.body.classList.toggle("dark-mode");
+  localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
 }
 
 function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function scrollToBottom() { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }
 
 function downloadVocab() {
-const data = JSON.parse(localStorage.getItem("vocabData")) || [];
-if(!data.length) return alert("لا توجد كلمات.");
-const content = data.map(i => i.eng + "\n" + i.ar).join("\n");
-const a = document.createElement("a");
-a.href = URL.createObjectURL(new Blob([content]));
-a.download = "vocab.txt";
-a.click();
+  const data = JSON.parse(localStorage.getItem("vocabData")) || [];
+  if(!data.length) return alert("لا توجد كلمات.");
+  const content = data.map(i => i.eng + "\n" + i.ar).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([content]));
+  a.download = "vocab.txt";
+  a.click();
 }
 
 document.getElementById("engInput").addEventListener("keydown", function(e) {
@@ -643,6 +741,10 @@ document.getElementById("fileInput").addEventListener("change", function (e) {
 
         localStorage.setItem("vocabData", JSON.stringify(vocabData));
         populateTable(vocabData);
+        // إعادة تعيين مؤشر النطق
+        currentIndex = -1;
+        stopSpeaking();
+        localStorage.removeItem("lastIndex");
     };
 
     reader.readAsText(file);
@@ -652,6 +754,5 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("service-worker.js");
 }
 </script>
-
 </body>
 </html>

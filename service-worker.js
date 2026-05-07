@@ -1,4 +1,4 @@
-const CACHE_NAME = "german-vocab-v3";
+const CACHE_NAME = "german-vocab-v4";
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
